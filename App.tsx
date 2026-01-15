@@ -75,6 +75,8 @@ export default function App() {
   const [status, setStatus] = React.useState<AppStatus>(AppStatus.IDLE);
   const [isCloudSynced, setIsCloudSynced] = React.useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [liveTranscript, setLiveTranscript] = React.useState('');
+  const [sentence, setSentence] = React.useState<string[]>([]);
+  const lastDetectedRef = React.useRef<{ label: string, time: number } | null>(null);
   const [predictions, setPredictions] = React.useState<Prediction[]>([]);
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
@@ -260,6 +262,17 @@ export default function App() {
 
       if (allMatches.length > 0 && allMatches[0].confidence > CONFIDENCE_THRESHOLD) {
         setPredictions(allMatches);
+
+        const topMatch = allMatches[0];
+        const now = Date.now();
+        if (!lastDetectedRef.current ||
+          (lastDetectedRef.current.label !== topMatch.label && now - lastDetectedRef.current.time > 1000) ||
+          (lastDetectedRef.current.label === topMatch.label && now - lastDetectedRef.current.time > 2000)) {
+
+          setSentence(prev => [...prev, topMatch.label]);
+          lastDetectedRef.current = { label: topMatch.label, time: now };
+        }
+
         if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
         clearTimerRef.current = window.setTimeout(() => {
           setPredictions([]);
@@ -427,7 +440,19 @@ export default function App() {
               </div>
 
               {activeMode === ViewMode.INTERPRETER && (
-                <div className="absolute bottom-20 sm:bottom-24 inset-x-4 sm:inset-x-10 p-6 sm:p-10 bg-slate-900/70 backdrop-blur-2xl border border-white/10 rounded-[2rem] sm:rounded-[2.5rem] text-center shadow-2xl"><p className="text-2xl sm:text-4xl font-black italic tracking-tighter text-indigo-400 leading-tight">{liveTranscript || "Ready to translate..."}</p></div>
+                <>
+                  <div className="absolute bottom-20 sm:bottom-24 inset-x-4 sm:inset-x-10 flex flex-col items-center gap-4">
+                    <div className="p-6 sm:p-8 bg-slate-900/70 backdrop-blur-2xl border border-white/10 rounded-[2rem] sm:rounded-[2.5rem] text-center shadow-2xl w-full max-w-4xl">
+                      <p className="text-xl sm:text-3xl font-black italic tracking-tighter text-indigo-400 leading-tight mb-2">
+                        {sentence.length > 0 ? sentence.join(' ') : <span className="opacity-30">Waiting for signs...</span>}
+                      </p>
+                      {liveTranscript && <p className="text-xs sm:text-sm text-slate-400 font-mono mt-2 border-t border-white/5 pt-2">{liveTranscript}</p>}
+                    </div>
+                    {sentence.length > 0 && (
+                      <button onClick={() => { setSentence([]); lastDetectedRef.current = null; }} className="bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all">Clear Sentence</button>
+                    )}
+                  </div>
+                </>
               )}
 
               <button onClick={toggleEngine} className={`absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 sm:px-12 sm:py-6 rounded-2xl font-black text-xs sm:text-sm tracking-widest shadow-2xl transition-all z-30 whitespace-nowrap ${status === AppStatus.LISTENING ? 'bg-rose-500' : 'bg-indigo-600 hover:bg-indigo-500'}`}>{status === AppStatus.LISTENING ? 'DISABLE ENGINE' : 'ACTIVATE CAMERA'}</button>
