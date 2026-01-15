@@ -1,0 +1,8 @@
+{
+  "name": "EchoAssist: Visual Interpreter",
+  "description": "An AI-powered sign language assistant that translates signs to voice and speech to visual sign illustrations.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}
