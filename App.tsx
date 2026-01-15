@@ -12,7 +12,9 @@ const CLEAR_DELAY = 1500;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 
-const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase: SupabaseClient | null = (SUPABASE_URL && SUPABASE_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_KEY)
+  : null;
 
 // MediaPipe Globals
 declare const Hands: any;
@@ -99,6 +101,7 @@ export default function App() {
   const [countdown, setCountdown] = React.useState<number | null>(null);
 
   const syncToSupabase = async (data: CustomSign[]) => {
+    if (!supabase) return;
     setIsCloudSynced('syncing');
     try {
       const { error } = await supabase
@@ -119,6 +122,7 @@ export default function App() {
   };
 
   const loadFromSupabase = async () => {
+    if (!supabase) return;
     setIsCloudSynced('syncing');
     try {
       const { data, error } = await supabase
@@ -142,7 +146,7 @@ export default function App() {
   };
 
   React.useEffect(() => {
-    loadFromSupabase();
+    if (supabase) loadFromSupabase();
   }, []);
 
   React.useEffect(() => {
@@ -334,13 +338,32 @@ export default function App() {
     if (confirm("This will permanently delete ALL variations from the cloud and this device. Continue?")) {
       setCustomSigns([]);
       localStorage.removeItem(STORAGE_KEY);
-      supabase.from('echo_library').delete().eq('id', 1).then(() => {
-        setIsCloudSynced('idle');
-      });
+      if (supabase) {
+        supabase.from('echo_library').delete().eq('id', 1).then(() => {
+          setIsCloudSynced('idle');
+        });
+      }
     }
   };
 
   const doesExist = customSigns.some(s => s.label === teachLabel.trim().toUpperCase());
+
+  if (!supabase) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-950 text-white p-4">
+        <div className="max-w-md space-y-4 text-center">
+          <h1 className="text-3xl font-black text-rose-500">Configuration Missing</h1>
+          <p className="text-slate-400">The application requires Supabase credentials to function.</p>
+          <div className="bg-slate-900 p-4 rounded-lg text-left text-xs font-mono text-slate-300">
+            <p>Please add the following environment variables to your deployment settings (Vercel/GitHub):</p>
+            <br />
+            <p className="text-indigo-400">VITE_SUPABASE_URL</p>
+            <p className="text-indigo-400">VITE_SUPABASE_KEY</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
@@ -353,8 +376,8 @@ export default function App() {
             <h1 className="text-xl font-black tracking-tighter truncate leading-none">EchoAssist</h1>
             <div className="flex items-center gap-1.5 mt-1">
               <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${isCloudSynced === 'success' ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' :
-                  isCloudSynced === 'syncing' ? 'bg-indigo-400 animate-pulse' :
-                    isCloudSynced === 'error' ? 'bg-rose-500' : 'bg-slate-600'
+                isCloudSynced === 'syncing' ? 'bg-indigo-400 animate-pulse' :
+                  isCloudSynced === 'error' ? 'bg-rose-500' : 'bg-slate-600'
                 }`} />
               <span className="text-[7px] font-black uppercase tracking-widest opacity-40">
                 {isCloudSynced === 'success' ? 'Synchronized' : isCloudSynced === 'syncing' ? 'Syncing variations...' : 'Supabase Active'}
