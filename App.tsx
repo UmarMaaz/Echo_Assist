@@ -417,24 +417,24 @@ export default function App() {
               <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover mirror pointer-events-none" />
               {countdown && <div className="absolute inset-0 flex items-center justify-center text-[10rem] font-black text-white/40 animate-pulse z-50">{countdown}</div>}
 
-              <div className="absolute top-10 right-10 z-20 flex flex-col gap-2 w-64">
+              <div className="absolute top-4 right-4 sm:top-10 sm:right-10 z-20 flex flex-col gap-2 w-48 sm:w-64">
                 {predictions.map((p, i) => (
-                  <div key={p.label} className={`px-6 py-3 bg-slate-900/80 backdrop-blur-md rounded-2xl border-2 transition-all duration-300 ${i === 0 ? 'border-indigo-400 scale-105 shadow-2xl' : 'border-white/5 opacity-50'}`}>
-                    <div className="flex justify-between items-end mb-1"><p className={`font-black uppercase tracking-tighter ${i === 0 ? 'text-2xl text-white' : 'text-sm text-slate-400'}`}>{p.label}</p><p className="text-[10px] font-bold text-indigo-400">{Math.round(p.confidence * 100)}%</p></div>
+                  <div key={p.label} className={`px-4 py-2 sm:px-6 sm:py-3 bg-slate-900/80 backdrop-blur-md rounded-2xl border-2 transition-all duration-300 ${i === 0 ? 'border-indigo-400 scale-105 shadow-2xl' : 'border-white/5 opacity-50'}`}>
+                    <div className="flex justify-between items-end mb-1"><p className={`font-black uppercase tracking-tighter ${i === 0 ? 'text-lg sm:text-2xl text-white' : 'text-xs sm:text-sm text-slate-400'}`}>{p.label}</p><p className="text-[10px] font-bold text-indigo-400">{Math.round(p.confidence * 100)}%</p></div>
                     <div className="h-1 bg-white/10 rounded-full overflow-hidden"><div className={`h-full transition-all duration-500 ${i === 0 ? 'bg-indigo-400' : 'bg-slate-500'}`} style={{ width: `${p.confidence * 100}%` }} /></div>
                   </div>
                 ))}
               </div>
 
               {activeMode === ViewMode.INTERPRETER && (
-                <div className="absolute bottom-24 inset-x-10 p-10 bg-slate-900/70 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] text-center shadow-2xl"><p className="text-4xl font-black italic tracking-tighter text-indigo-400 leading-tight">{liveTranscript || "Ready to translate..."}</p></div>
+                <div className="absolute bottom-20 sm:bottom-24 inset-x-4 sm:inset-x-10 p-6 sm:p-10 bg-slate-900/70 backdrop-blur-2xl border border-white/10 rounded-[2rem] sm:rounded-[2.5rem] text-center shadow-2xl"><p className="text-2xl sm:text-4xl font-black italic tracking-tighter text-indigo-400 leading-tight">{liveTranscript || "Ready to translate..."}</p></div>
               )}
 
-              <button onClick={toggleEngine} className={`absolute bottom-8 left-1/2 -translate-x-1/2 px-12 py-6 rounded-2xl font-black text-sm tracking-widest shadow-2xl transition-all ${status === AppStatus.LISTENING ? 'bg-rose-500' : 'bg-indigo-600 hover:bg-indigo-500'}`}>{status === AppStatus.LISTENING ? 'DISABLE ENGINE' : 'ACTIVATE CAMERA'}</button>
+              <button onClick={toggleEngine} className={`absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 sm:px-12 sm:py-6 rounded-2xl font-black text-xs sm:text-sm tracking-widest shadow-2xl transition-all z-30 whitespace-nowrap ${status === AppStatus.LISTENING ? 'bg-rose-500' : 'bg-indigo-600 hover:bg-indigo-500'}`}>{status === AppStatus.LISTENING ? 'DISABLE ENGINE' : 'ACTIVATE CAMERA'}</button>
             </div>
 
             {activeMode === ViewMode.TRAINING && (
-              <aside className="w-[380px] bg-slate-900 border-l border-white/10 flex flex-col shrink-0 overflow-hidden">
+              <aside className="w-full lg:w-[380px] bg-slate-900 border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col shrink-0 overflow-hidden h-[40vh] lg:h-auto">
                 <div className="p-8 space-y-6 bg-slate-900/50">
                   <div className="flex justify-between items-center">
                     <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Variation Manager</h2>
