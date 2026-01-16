@@ -446,7 +446,6 @@ export default function App() {
                       <p className="text-xl sm:text-3xl font-black italic tracking-tighter text-indigo-400 leading-tight mb-2">
                         {sentence.length > 0 ? sentence.join(' ') : <span className="opacity-30">Waiting for signs...</span>}
                       </p>
-                      {liveTranscript && <p className="text-xs sm:text-sm text-slate-400 font-mono mt-2 border-t border-white/5 pt-2">{liveTranscript}</p>}
                     </div>
                     {sentence.length > 0 && (
                       <button onClick={() => { setSentence([]); lastDetectedRef.current = null; }} className="bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all">Clear Sentence</button>
