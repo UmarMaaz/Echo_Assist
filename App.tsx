@@ -200,8 +200,10 @@ export default function App() {
 
   const speakWord = async (word: string) => {
     const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+    console.log('speakWord called with:', word, 'API key present:', !!apiKey);
+
     if (!apiKey) {
-      // Fallback to browser TTS
+      console.log('No ElevenLabs API key, falling back to browser TTS');
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(word);
         utterance.rate = 0.9;
@@ -209,8 +211,10 @@ export default function App() {
       }
       return;
     }
+
     try {
       const voiceId = 'JBFqnCBsd6RMkjVDRZzb'; // George voice
+      console.log('Calling ElevenLabs API...');
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: 'POST',
         headers: {
@@ -224,14 +228,31 @@ export default function App() {
           voice_settings: { stability: 0.5, similarity_boost: 0.75 }
         })
       });
+
+      console.log('ElevenLabs response status:', response.status);
+
       if (response.ok) {
         const audioBlob = await response.blob();
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
-        audio.play();
+        console.log('Playing audio...');
+        audio.play().catch(e => console.error('Audio play failed:', e));
+      } else {
+        const errorText = await response.text();
+        console.error('ElevenLabs error:', response.status, errorText);
+        // Fallback to browser TTS
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(word);
+          window.speechSynthesis.speak(utterance);
+        }
       }
     } catch (err) {
       console.error('ElevenLabs TTS failed:', err);
+      // Fallback to browser TTS
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(word);
+        window.speechSynthesis.speak(utterance);
+      }
     }
   };
 
