@@ -613,42 +613,7 @@ export default function App() {
                     {matchedSign ? (
                       <div className="space-y-3 sm:space-y-4">
                         <p className="text-xs sm:text-sm text-emerald-400 font-bold uppercase tracking-widest">Sign Found: {matchedSign.label}</p>
-                        <canvas
-                          id="signPreviewCanvas"
-                          width={250}
-                          height={250}
-                          className="mx-auto bg-slate-950 rounded-xl sm:rounded-2xl border border-white/10 max-w-full"
-                          ref={(canvas) => {
-                            if (canvas && matchedSign.samples[0]) {
-                              const ctx = canvas.getContext('2d');
-                              if (ctx) {
-                                ctx.clearRect(0, 0, 300, 300);
-                                const sample = matchedSign.samples[0];
-                                const connections = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
-                                ctx.strokeStyle = '#6366f1';
-                                ctx.lineWidth = 3;
-                                connections.forEach(([a, b]) => {
-                                  const p1 = sample.normalized[a];
-                                  const p2 = sample.normalized[b];
-                                  if (p1 && p2) {
-                                    ctx.beginPath();
-                                    ctx.moveTo(150 + p1.nx * 80, 150 + p1.ny * 80);
-                                    ctx.lineTo(150 + p2.nx * 80, 150 + p2.ny * 80);
-                                    ctx.stroke();
-                                  }
-                                });
-                                sample.normalized.forEach((p: any, i: number) => {
-                                  const isTip = [4, 8, 12, 16, 20].includes(i);
-                                  ctx.beginPath();
-                                  ctx.arc(150 + p.nx * 80, 150 + p.ny * 80, isTip ? 6 : 4, 0, Math.PI * 2);
-                                  ctx.fillStyle = isTip ? '#f472b6' : '#818cf8';
-                                  ctx.fill();
-                                });
-                              }
-                            }
-                          }}
-                        />
-                        <p className="text-xs text-slate-500">Hand pose for "{matchedSign.label}"</p>
+                        <SignPreview sign={matchedSign} />
                       </div>
                     ) : (
                       <div className="py-12 text-slate-500 text-sm">
