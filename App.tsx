@@ -103,8 +103,9 @@ const SignPreview = ({ sign }: { sign: CustomSign }) => {
           const p2 = sample.normalized[j];
           if (p1 && p2) {
             ctx.beginPath();
-            ctx.moveTo(125 + p1.nx * 80, 125 + p1.ny * 80);
-            ctx.lineTo(125 + p2.nx * 80, 125 + p2.ny * 80);
+            // Centering: shift Y down by 40px
+            ctx.moveTo(125 + p1.nx * 80, 165 + p1.ny * 80);
+            ctx.lineTo(125 + p2.nx * 80, 165 + p2.ny * 80);
             ctx.stroke();
           }
         });
@@ -113,7 +114,8 @@ const SignPreview = ({ sign }: { sign: CustomSign }) => {
         sample.normalized.forEach((p: any, i: number) => {
           const isTip = [4, 8, 12, 16, 20].includes(i);
           ctx.beginPath();
-          ctx.arc(125 + p.nx * 80, 125 + p.ny * 80, isTip ? 6 : 4, 0, Math.PI * 2);
+          // Centering: shift Y down by 40px
+          ctx.arc(125 + p.nx * 80, 165 + p.ny * 80, isTip ? 6 : 4, 0, Math.PI * 2);
           ctx.fillStyle = isTip ? '#f472b6' : '#818cf8';
           ctx.fill();
         });
