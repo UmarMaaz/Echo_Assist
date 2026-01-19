@@ -210,18 +210,18 @@ export default function App() {
           const found = customSignsRef.current.find(s => s.label === word);
           if (found) {
             console.log('Match found:', word);
-            // Set directly - React will re-render even for same value since we use a new reference check
+            // Set directly - React will re-render with new object reference
             setMatchedSign({ ...found, _ts: Date.now() } as any);
             break;
           }
         }
 
-        // Auto-reset transcript after 3.5 seconds of silence
+        // Auto-reset transcript after 2 seconds of silence (faster for rapid speech)
         if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
         clearTimerRef.current = window.setTimeout(() => {
           setLiveTranscript('');
           console.log('Transcript cleared - ready for new word');
-        }, 3500);
+        }, 2000);
       };
       rec.onerror = (e: any) => { console.error('Speech recognition error:', e.error); setIsSpeechActive(false); };
       rec.onend = () => {
