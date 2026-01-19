@@ -204,11 +204,15 @@ export default function App() {
         const words = text.toUpperCase().trim().split(/\s+/).filter(w => w.length > 0);
         console.log('Words parsed:', words, 'Available signs:', customSignsRef.current.map(s => s.label));
 
-        for (const word of words) {
+        // Check the LAST word spoken for best real-time response
+        for (let i = words.length - 1; i >= 0; i--) {
+          const word = words[i];
           const found = customSignsRef.current.find(s => s.label === word);
           if (found) {
             console.log('Match found:', word);
-            setMatchedSign(found);
+            // Force re-render by briefly clearing then setting
+            setMatchedSign(null);
+            setTimeout(() => setMatchedSign(found), 50);
             break;
           }
         }
