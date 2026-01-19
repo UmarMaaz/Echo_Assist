@@ -71,7 +71,67 @@ const processHandData = (landmarks: any[]) => {
   return { normalized, curlStates };
 };
 
-export default function App() {
+export default // Separate component for reliable canvas updates
+const SignPreview = ({ sign }: { sign: CustomSign }) => {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas && sign.samples[0]) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 250, 250);
+
+        // Draw hand skeleton
+        const sample = sign.samples[0];
+
+        // Connections
+        const connections = [
+          [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
+          [0, 5], [5, 6], [6, 7], [7, 8], // Index
+          [0, 9], [9, 10], [10, 11], [11, 12], // Middle
+          [0, 13], [13, 14], [14, 15], [15, 16], // Ring
+          [0, 17], [17, 18], [18, 19], [19, 20] // Pinky
+        ];
+
+        ctx.strokeStyle = '#818cf8';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+
+        connections.forEach(([i, j]) => {
+          const p1 = sample.normalized[i];
+          const p2 = sample.normalized[j];
+          if (p1 && p2) {
+            ctx.beginPath();
+            ctx.moveTo(125 + p1.nx * 80, 125 + p1.ny * 80);
+            ctx.lineTo(125 + p2.nx * 80, 125 + p2.ny * 80);
+            ctx.stroke();
+          }
+        });
+
+        // Landmarks
+        sample.normalized.forEach((p: any, i: number) => {
+          const isTip = [4, 8, 12, 16, 20].includes(i);
+          ctx.beginPath();
+          ctx.arc(125 + p.nx * 80, 125 + p.ny * 80, isTip ? 6 : 4, 0, Math.PI * 2);
+          ctx.fillStyle = isTip ? '#f472b6' : '#818cf8';
+          ctx.fill();
+        });
+      }
+    }
+  }, [sign]); // Re-run when sign changes
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={250}
+      height={250}
+      className="mx-auto bg-slate-950 rounded-xl sm:rounded-2xl border border-white/10 max-w-full"
+    />
+  );
+};
+
+function App() {
   const [activeMode, setActiveMode] = React.useState<ViewMode>(ViewMode.INTERPRETER);
   const [status, setStatus] = React.useState<AppStatus>(AppStatus.IDLE);
   const [isCloudSynced, setIsCloudSynced] = React.useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
