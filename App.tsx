@@ -24,7 +24,8 @@ declare const HAND_CONNECTIONS: any;
 enum ViewMode {
   INTERPRETER = 'INTERPRETER',
   TRAINING = 'TRAINING',
-  ACADEMY = 'ACADEMY'
+  ACADEMY = 'ACADEMY',
+  LISTENER = 'LISTENER'
 }
 
 interface HandSample {
@@ -78,6 +79,7 @@ export default function App() {
   const [sentence, setSentence] = React.useState<string[]>([]);
   const lastDetectedRef = React.useRef<{ label: string, time: number } | null>(null);
   const [predictions, setPredictions] = React.useState<Prediction[]>([]);
+  const [matchedSign, setMatchedSign] = React.useState<CustomSign | null>(null);
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -192,6 +194,16 @@ export default function App() {
           text += e.results[i][0].transcript;
         }
         setLiveTranscript(text);
+
+        // Match spoken words to stored signs (for LISTENER mode)
+        const words = text.toUpperCase().split(/\s+/);
+        const lastWord = words[words.length - 1];
+        if (lastWord) {
+          const found = customSignsRef.current.find(s => s.label === lastWord);
+          if (found) {
+            setMatchedSign(found);
+          }
+        }
       };
       rec.onend = () => { if (isListeningRef.current) rec.start(); };
       recognitionRef.current = rec;
@@ -457,9 +469,9 @@ export default function App() {
             </div>
           </div>
         </div>
-        <nav className="flex bg-slate-800 p-1 rounded-xl gap-1 w-full sm:w-auto">
-          {[ViewMode.INTERPRETER, ViewMode.ACADEMY, ViewMode.TRAINING].map(m => (
-            <button key={m} onClick={() => setActiveMode(m)} className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all ${activeMode === m ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>{m}</button>
+        <nav className="flex bg-slate-800 p-1 rounded-xl gap-1 w-full sm:w-auto overflow-x-auto">
+          {[ViewMode.INTERPRETER, ViewMode.LISTENER, ViewMode.ACADEMY, ViewMode.TRAINING].map(m => (
+            <button key={m} onClick={() => setActiveMode(m)} className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-[8px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${activeMode === m ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>{m}</button>
           ))}
         </nav>
       </header>
@@ -511,6 +523,66 @@ export default function App() {
                     )}
                   </div>
                 </>
+              )}
+
+              {activeMode === ViewMode.LISTENER && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+                  <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 max-w-2xl w-full text-center space-y-6">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Listening for Speech</p>
+                      <p className="text-2xl sm:text-4xl font-black text-white leading-tight">
+                        {liveTranscript || <span className="opacity-30">Say a word...</span>}
+                      </p>
+                    </div>
+
+                    {matchedSign ? (
+                      <div className="space-y-4">
+                        <p className="text-sm text-emerald-400 font-bold uppercase tracking-widest">Sign Found: {matchedSign.label}</p>
+                        <canvas
+                          id="signPreviewCanvas"
+                          width={300}
+                          height={300}
+                          className="mx-auto bg-slate-950 rounded-2xl border border-white/10"
+                          ref={(canvas) => {
+                            if (canvas && matchedSign.samples[0]) {
+                              const ctx = canvas.getContext('2d');
+                              if (ctx) {
+                                ctx.clearRect(0, 0, 300, 300);
+                                const sample = matchedSign.samples[0];
+                                const connections = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
+                                ctx.strokeStyle = '#6366f1';
+                                ctx.lineWidth = 3;
+                                connections.forEach(([a, b]) => {
+                                  const p1 = sample.normalized[a];
+                                  const p2 = sample.normalized[b];
+                                  if (p1 && p2) {
+                                    ctx.beginPath();
+                                    ctx.moveTo(150 + p1.nx * 80, 150 + p1.ny * 80);
+                                    ctx.lineTo(150 + p2.nx * 80, 150 + p2.ny * 80);
+                                    ctx.stroke();
+                                  }
+                                });
+                                sample.normalized.forEach((p: any, i: number) => {
+                                  const isTip = [4, 8, 12, 16, 20].includes(i);
+                                  ctx.beginPath();
+                                  ctx.arc(150 + p.nx * 80, 150 + p.ny * 80, isTip ? 6 : 4, 0, Math.PI * 2);
+                                  ctx.fillStyle = isTip ? '#f472b6' : '#818cf8';
+                                  ctx.fill();
+                                });
+                              }
+                            }
+                          }}
+                        />
+                        <p className="text-xs text-slate-500">Hand pose for "{matchedSign.label}"</p>
+                      </div>
+                    ) : (
+                      <div className="py-12 text-slate-500 text-sm">
+                        <p>Speak a word that matches a trained sign</p>
+                        <p className="text-xs mt-2 opacity-50">Available: {customSigns.map(s => s.label).join(', ') || 'None trained yet'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
 
               <button onClick={toggleEngine} className={`absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 sm:px-12 sm:py-6 rounded-2xl font-black text-xs sm:text-sm tracking-widest shadow-2xl transition-all z-30 whitespace-nowrap ${status === AppStatus.LISTENING ? 'bg-rose-500' : 'bg-indigo-600 hover:bg-indigo-500'}`}>{status === AppStatus.LISTENING ? 'DISABLE ENGINE' : 'ACTIVATE CAMERA'}</button>
