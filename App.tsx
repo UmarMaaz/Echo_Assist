@@ -210,9 +210,8 @@ export default function App() {
           const found = customSignsRef.current.find(s => s.label === word);
           if (found) {
             console.log('Match found:', word);
-            // Force re-render by briefly clearing then setting
-            setMatchedSign(null);
-            setTimeout(() => setMatchedSign(found), 50);
+            // Set directly - React will re-render even for same value since we use a new reference check
+            setMatchedSign({ ...found, _ts: Date.now() } as any);
             break;
           }
         }
