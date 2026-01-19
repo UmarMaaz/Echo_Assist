@@ -81,6 +81,7 @@ export default function App() {
   const [predictions, setPredictions] = React.useState<Prediction[]>([]);
   const [matchedSign, setMatchedSign] = React.useState<CustomSign | null>(null);
   const [textInput, setTextInput] = React.useState('');
+  const [isSpeechActive, setIsSpeechActive] = React.useState(false);
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -190,6 +191,7 @@ export default function App() {
       rec.continuous = true;
       rec.interimResults = true;
       rec.lang = 'en-US';
+      rec.onstart = () => { setIsSpeechActive(true); console.log('Speech recognition started'); };
       rec.onresult = (e: any) => {
         let text = '';
         for (let i = e.resultIndex; i < e.results.length; ++i) {
@@ -211,11 +213,30 @@ export default function App() {
           }
         }
       };
-      rec.onerror = (e: any) => { console.error('Speech recognition error:', e.error); };
-      rec.onend = () => { if (isListeningRef.current) rec.start(); };
+      rec.onerror = (e: any) => { console.error('Speech recognition error:', e.error); setIsSpeechActive(false); };
+      rec.onend = () => {
+        setIsSpeechActive(false);
+        if (isListeningRef.current) rec.start();
+      };
       recognitionRef.current = rec;
     } else {
       console.log('Speech recognition not supported');
+    }
+  };
+
+  // Start speech recognition only (for LISTENER mode)
+  const startSpeechOnly = async () => {
+    if (isSpeechActive) {
+      recognitionRef.current?.stop();
+      setIsSpeechActive(false);
+      return;
+    }
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      recognitionRef.current?.start();
+    } catch (e) {
+      console.error('Microphone access denied:', e);
+      alert('Please allow microphone access for speech recognition.');
     }
   };
 
@@ -545,10 +566,21 @@ export default function App() {
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-8 overflow-y-auto">
                   <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 max-w-2xl w-full text-center space-y-4 sm:space-y-6">
                     <div>
-                      <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Listening for Speech</p>
+                      <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Speech-to-Sign Mode</p>
                       <p className="text-lg sm:text-2xl lg:text-4xl font-black text-white leading-tight">
-                        {liveTranscript || <span className="opacity-30">Say a word...</span>}
+                        {liveTranscript || <span className="opacity-30">Activate microphone...</span>}
                       </p>
+                    </div>
+
+                    <button
+                      onClick={startSpeechOnly}
+                      className={`px-8 py-4 rounded-2xl font-black text-sm tracking-widest transition-all ${isSpeechActive ? 'bg-rose-500 animate-pulse' : 'bg-emerald-600 hover:bg-emerald-500'}`}
+                    >
+                      {isSpeechActive ? '🎤 LISTENING...' : '🎤 START MICROPHONE'}
+                    </button>
+
+                    <div className={`text-xs font-bold uppercase tracking-widest ${isSpeechActive ? 'text-emerald-400' : 'text-slate-500'}`}>
+                      {isSpeechActive ? '● Speech Recognition Active' : '○ Microphone Off'}
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-2">
