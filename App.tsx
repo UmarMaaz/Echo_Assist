@@ -80,6 +80,7 @@ export default function App() {
   const lastDetectedRef = React.useRef<{ label: string, time: number } | null>(null);
   const [predictions, setPredictions] = React.useState<Prediction[]>([]);
   const [matchedSign, setMatchedSign] = React.useState<CustomSign | null>(null);
+  const [textInput, setTextInput] = React.useState('');
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -188,26 +189,41 @@ export default function App() {
       const rec = new SR();
       rec.continuous = true;
       rec.interimResults = true;
+      rec.lang = 'en-US';
       rec.onresult = (e: any) => {
         let text = '';
         for (let i = e.resultIndex; i < e.results.length; ++i) {
           text += e.results[i][0].transcript;
         }
         setLiveTranscript(text);
+        console.log('Speech detected:', text);
 
-        // Match spoken words to stored signs (for LISTENER mode)
-        const words = text.toUpperCase().split(/\s+/);
-        const lastWord = words[words.length - 1];
-        if (lastWord) {
-          const found = customSignsRef.current.find(s => s.label === lastWord);
+        // Match ALL spoken words to stored signs (for LISTENER mode)
+        const words = text.toUpperCase().trim().split(/\s+/).filter(w => w.length > 0);
+        console.log('Words parsed:', words, 'Available signs:', customSignsRef.current.map(s => s.label));
+
+        for (const word of words) {
+          const found = customSignsRef.current.find(s => s.label === word);
           if (found) {
+            console.log('Match found:', word);
             setMatchedSign(found);
+            break;
           }
         }
       };
+      rec.onerror = (e: any) => { console.error('Speech recognition error:', e.error); };
       rec.onend = () => { if (isListeningRef.current) rec.start(); };
       recognitionRef.current = rec;
+    } else {
+      console.log('Speech recognition not supported');
     }
+  };
+
+  // Function to search for sign by text input
+  const searchSign = (query: string) => {
+    const q = query.toUpperCase().trim();
+    const found = customSigns.find(s => s.label === q);
+    setMatchedSign(found || null);
   };
 
   const speakWord = async (word: string) => {
@@ -533,6 +549,23 @@ export default function App() {
                       <p className="text-2xl sm:text-4xl font-black text-white leading-tight">
                         {liveTranscript || <span className="opacity-30">Say a word...</span>}
                       </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={textInput}
+                        onChange={(e) => setTextInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') searchSign(textInput); }}
+                        placeholder="Or type a word..."
+                        className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-lg font-bold outline-none focus:border-indigo-500"
+                      />
+                      <button
+                        onClick={() => searchSign(textInput)}
+                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold uppercase text-sm tracking-wide"
+                      >
+                        Search
+                      </button>
                     </div>
 
                     {matchedSign ? (
