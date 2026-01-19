@@ -140,6 +140,8 @@ export default function App() {
   const [liveTranscript, setLiveTranscript] = React.useState('');
   const [sentence, setSentence] = React.useState<string[]>([]);
   const lastDetectedRef = React.useRef<{ label: string, time: number } | null>(null);
+  const audioQueueRef = React.useRef<string[]>([]);
+  const isPlayingAudioRef = React.useRef(false);
   const [predictions, setPredictions] = React.useState<Prediction[]>([]);
   const [matchedSign, setMatchedSign] = React.useState<CustomSign | null>(null);
   const [textInput, setTextInput] = React.useState('');
