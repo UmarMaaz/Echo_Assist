@@ -319,6 +319,25 @@ export default function App() {
     setMatchedSign(found || null);
   };
 
+  const processAudioQueue = () => {
+    if (audioQueueRef.current.length > 0 && !isPlayingAudioRef.current) {
+      isPlayingAudioRef.current = true;
+      const audioUrl = audioQueueRef.current.shift();
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
+        audio.onended = () => {
+          isPlayingAudioRef.current = false;
+          processAudioQueue();
+        };
+        audio.play().catch(e => {
+          console.error("Error playing audio:", e);
+          isPlayingAudioRef.current = false;
+          processAudioQueue();
+        });
+      }
+    }
+  };
+
   const speakWord = async (word: string) => {
     const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
     console.log('speakWord called with:', word, 'API key present:', !!apiKey);
