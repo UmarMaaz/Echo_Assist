@@ -71,7 +71,7 @@ const processHandData = (landmarks: any[]) => {
   return { normalized, curlStates };
 };
 
-export default // Separate component for reliable canvas updates
+// Separate component for reliable canvas updates
 const SignPreview = ({ sign }: { sign: CustomSign }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
@@ -131,7 +131,7 @@ const SignPreview = ({ sign }: { sign: CustomSign }) => {
   );
 };
 
-function App() {
+export default function App() {
   const [activeMode, setActiveMode] = React.useState<ViewMode>(ViewMode.INTERPRETER);
   const [status, setStatus] = React.useState<AppStatus>(AppStatus.IDLE);
   const [isCloudSynced, setIsCloudSynced] = React.useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
