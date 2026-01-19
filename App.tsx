@@ -198,12 +198,40 @@ export default function App() {
     }
   };
 
-  const speakWord = (word: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(word);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      window.speechSynthesis.speak(utterance);
+  const speakWord = async (word: string) => {
+    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      // Fallback to browser TTS
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+      }
+      return;
+    }
+    try {
+      const voiceId = 'JBFqnCBsd6RMkjVDRZzb'; // George voice
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': apiKey
+        },
+        body: JSON.stringify({
+          text: word,
+          model_id: 'eleven_monolingual_v1',
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+        })
+      });
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+      }
+    } catch (err) {
+      console.error('ElevenLabs TTS failed:', err);
     }
   };
 
