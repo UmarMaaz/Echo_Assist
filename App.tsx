@@ -142,6 +142,7 @@ export default function App() {
   const lastDetectedRef = React.useRef<{ label: string, time: number } | null>(null);
   const audioQueueRef = React.useRef<string[]>([]);
   const isPlayingAudioRef = React.useRef(false);
+  const lastSpokenWordRef = React.useRef<string | null>(null);
   const [predictions, setPredictions] = React.useState<Prediction[]>([]);
   const [matchedSign, setMatchedSign] = React.useState<CustomSign | null>(null);
   const [textInput, setTextInput] = React.useState('');
@@ -284,6 +285,7 @@ export default function App() {
         if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
         clearTimerRef.current = window.setTimeout(() => {
           setLiveTranscript('');
+          lastSpokenWordRef.current = null; // Reset spoken word tracker so it can be said again later
           console.log('Transcript cleared - ready for new word');
         }, 2000);
       };
@@ -341,6 +343,13 @@ export default function App() {
   };
 
   const speakWord = async (word: string) => {
+    // Prevent repeating the same word consecutively
+    if (lastSpokenWordRef.current === word) {
+      console.log('Word already spoken recently, skipping:', word);
+      return;
+    }
+    lastSpokenWordRef.current = word;
+
     const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
     console.log('speakWord called with:', word, 'API key present:', !!apiKey);
 
