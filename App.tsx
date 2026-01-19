@@ -212,6 +212,13 @@ export default function App() {
             break;
           }
         }
+
+        // Auto-reset transcript after 3.5 seconds of silence
+        if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+        clearTimerRef.current = window.setTimeout(() => {
+          setLiveTranscript('');
+          console.log('Transcript cleared - ready for new word');
+        }, 3500);
       };
       rec.onerror = (e: any) => { console.error('Speech recognition error:', e.error); setIsSpeechActive(false); };
       rec.onend = () => {
