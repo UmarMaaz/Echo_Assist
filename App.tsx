@@ -198,6 +198,15 @@ export default function App() {
     }
   };
 
+  const speakWord = (word: string) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   const calculateSimilarity = (live: any, saved: any) => {
     let totalDist = 0;
     const weights = [1, 1, 1, 1, 4, 1, 1, 1, 4, 1, 1, 1, 4, 1, 1, 1, 4, 1, 1, 1, 4];
@@ -270,6 +279,7 @@ export default function App() {
           (lastDetectedRef.current.label === topMatch.label && now - lastDetectedRef.current.time > 2000)) {
 
           setSentence(prev => [...prev, topMatch.label]);
+          speakWord(topMatch.label);
           lastDetectedRef.current = { label: topMatch.label, time: now };
         }
 
