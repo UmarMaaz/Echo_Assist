@@ -542,40 +542,40 @@ export default function App() {
               )}
 
               {activeMode === ViewMode.LISTENER && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-                  <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 max-w-2xl w-full text-center space-y-6">
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-8 overflow-y-auto">
+                  <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 max-w-2xl w-full text-center space-y-4 sm:space-y-6">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Listening for Speech</p>
-                      <p className="text-2xl sm:text-4xl font-black text-white leading-tight">
+                      <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Listening for Speech</p>
+                      <p className="text-lg sm:text-2xl lg:text-4xl font-black text-white leading-tight">
                         {liveTranscript || <span className="opacity-30">Say a word...</span>}
                       </p>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="text"
                         value={textInput}
                         onChange={(e) => setTextInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') searchSign(textInput); }}
-                        placeholder="Or type a word..."
-                        className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-lg font-bold outline-none focus:border-indigo-500"
+                        placeholder="Type a word..."
+                        className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-base sm:text-lg font-bold outline-none focus:border-indigo-500"
                       />
                       <button
                         onClick={() => searchSign(textInput)}
-                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold uppercase text-sm tracking-wide"
+                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold uppercase text-xs sm:text-sm tracking-wide"
                       >
                         Search
                       </button>
                     </div>
 
                     {matchedSign ? (
-                      <div className="space-y-4">
-                        <p className="text-sm text-emerald-400 font-bold uppercase tracking-widest">Sign Found: {matchedSign.label}</p>
+                      <div className="space-y-3 sm:space-y-4">
+                        <p className="text-xs sm:text-sm text-emerald-400 font-bold uppercase tracking-widest">Sign Found: {matchedSign.label}</p>
                         <canvas
                           id="signPreviewCanvas"
-                          width={300}
-                          height={300}
-                          className="mx-auto bg-slate-950 rounded-2xl border border-white/10"
+                          width={250}
+                          height={250}
+                          className="mx-auto bg-slate-950 rounded-xl sm:rounded-2xl border border-white/10 max-w-full"
                           ref={(canvas) => {
                             if (canvas && matchedSign.samples[0]) {
                               const ctx = canvas.getContext('2d');
