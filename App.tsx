@@ -333,11 +333,43 @@ export default function App() {
 
     // Browser TTS Fallback (Primary now)
     if ('speechSynthesis' in window) {
-      // Cancel previous utterance if you want immediate switch, or let it queue?
-      // window.speechSynthesis.cancel(); // Uncomment if we want to cut off previous word
+      // Ensure voices are loaded (some browsers need this)
+      let voices = window.speechSynthesis.getVoices();
+
       const utterance = new SpeechSynthesisUtterance(word);
-      utterance.rate = 1.0; // Slightly faster for natural feel
+      utterance.rate = 1.0;
+      utterance.volume = 1.0;
+      utterance.pitch = 1.0;
+
+      // Explicitly try to pick a good English voice
+      if (voices.length > 0) {
+        const preferredVoice = voices.find(v => v.lang === 'en-US' && !v.localService)
+          || voices.find(v => v.lang === 'en-US')
+          || voices.find(v => v.lang.startsWith('en'));
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+          console.log('Selected voice:', preferredVoice.name);
+        }
+      }
+
+      // Garbage collection fix for some browsers (Safari)
+      // Attach to window temporarily to prevent premature GC
+      (window as any).currentUtterance = utterance;
+      utterance.onend = () => { (window as any).currentUtterance = null; };
+      utterance.onerror = (e) => { console.error('TTS Error:', e); };
+
       window.speechSynthesis.speak(utterance);
+
+      // Force voice loading if empty (Safari/Chrome quirk)
+      if (voices.length === 0) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          const updatedVoices = window.speechSynthesis.getVoices();
+          // Retry voice assignment if it wasn't set? 
+          // Usually the first speak() call triggers the permission/loading.
+          console.log('Voices loaded:', updatedVoices.length);
+        };
+      }
+
     } else {
       console.log('Text-to-speech not supported in this browser.');
     }
