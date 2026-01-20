@@ -150,6 +150,7 @@ export default function App() {
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const playerRef = React.useRef<HTMLAudioElement | null>(null);
   const handsRef = React.useRef<any>(null);
   const isListeningRef = React.useRef(false);
   const recognitionRef = React.useRef<any>(null);
