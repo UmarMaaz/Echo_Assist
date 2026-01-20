@@ -300,11 +300,30 @@ export default function App() {
 
   // Helper to prime audio context for mobile browsers
   const unlockAudio = () => {
+    // 1. Prime TTS
     if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance('');
-      utterance.volume = 0; // Silent
+      // Use a space and normal volume (but short) to ensure it's processed
+      const utterance = new SpeechSynthesisUtterance(' ');
       window.speechSynthesis.speak(utterance);
-      console.log('Audio engine unlocked/primed');
+      console.log('TTS primed');
+    }
+
+    // 2. Prime Web Audio API (standard fix for iOS/Android audio locks)
+    try {
+      const AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (AudioContext) {
+        const ctx = new AudioContext();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 0; // Keep it silent
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        oscillator.start(0);
+        oscillator.stop(0.001);
+        console.log('AudioContext primed');
+      }
+    } catch (e) {
+      console.error('AudioContext priming failed:', e);
     }
   };
 
