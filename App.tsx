@@ -298,6 +298,16 @@ export default function App() {
     }
   };
 
+  // Helper to prime audio context for mobile browsers
+  const unlockAudio = () => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance('');
+      utterance.volume = 0; // Silent
+      window.speechSynthesis.speak(utterance);
+      console.log('Audio engine unlocked/primed');
+    }
+  };
+
   // Start speech recognition only (for LISTENER mode)
   const startSpeechOnly = async () => {
     if (isSpeechActive) {
@@ -305,6 +315,10 @@ export default function App() {
       setIsSpeechActive(false);
       return;
     }
+
+    // Unlock audio immediately on user interaction
+    unlockAudio();
+
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
       recognitionRef.current?.start();
