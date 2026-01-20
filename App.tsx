@@ -140,6 +140,8 @@ export default function App() {
   const [liveTranscript, setLiveTranscript] = React.useState('');
   const [sentence, setSentence] = React.useState<string[]>([]);
   const lastDetectedRef = React.useRef<{ label: string, time: number } | null>(null);
+  const audioQueueRef = React.useRef<string[]>([]);
+  const isPlayingAudioRef = React.useRef(false);
   const lastSpokenWordRef = React.useRef<string | null>(null);
   const [predictions, setPredictions] = React.useState<Prediction[]>([]);
   const [matchedSign, setMatchedSign] = React.useState<CustomSign | null>(null);
@@ -361,7 +363,36 @@ export default function App() {
     setMatchedSign(found || null);
   };
 
-  const speakWord = (word: string) => {
+  const processAudioQueue = () => {
+    if (audioQueueRef.current.length > 0 && !isPlayingAudioRef.current) {
+      isPlayingAudioRef.current = true;
+      const audioUrl = audioQueueRef.current.shift();
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
+
+        const cleanup = () => {
+          isPlayingAudioRef.current = false;
+          processAudioQueue();
+        };
+
+        audio.onended = cleanup;
+        audio.onerror = (e) => {
+          console.error("Audio playback error:", e);
+          cleanup();
+        };
+
+        audio.play().catch(e => {
+          console.error("Error playing audio:", e);
+          // If play fails (e.g. mobile auto-block), cleanup so queue continues
+          cleanup();
+        });
+      } else {
+        isPlayingAudioRef.current = false;
+      }
+    }
+  };
+
+  const speakWord = async (word: string) => {
     // Prevent repeating the same word consecutively
     if (lastSpokenWordRef.current === word) {
       console.log('Word already spoken recently, skipping:', word);
@@ -369,49 +400,55 @@ export default function App() {
     }
     lastSpokenWordRef.current = word;
 
-    console.log('speakWord called with:', word);
+    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+    console.log('speakWord called with:', word, 'API key present:', !!apiKey);
 
-    // Browser TTS Fallback (Primary now)
+    if (!apiKey) {
+      console.log('No ElevenLabs API key, falling back to browser TTS');
+      fallbackSpeak(word);
+      return;
+    }
+
+    try {
+      const voiceId = 'JBFqnCBsd6RMkjVDRZzb'; // George voice
+      // console.log('Calling ElevenLabs API...');
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': apiKey
+        },
+        body: JSON.stringify({
+          text: word,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`ElevenLabs API error: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      // Add to queue and process
+      audioQueueRef.current.push(url);
+      processAudioQueue();
+
+    } catch (e: any) {
+      console.error('TTS Error:', e);
+      // Fallback
+      fallbackSpeak(word);
+    }
+  };
+
+  const fallbackSpeak = (word: string) => {
     if ('speechSynthesis' in window) {
-      // Ensure voices are loaded (some browsers need this)
-      let voices = window.speechSynthesis.getVoices();
-
       const utterance = new SpeechSynthesisUtterance(word);
       utterance.rate = 1.0;
-      utterance.volume = 1.0;
-      utterance.pitch = 1.0;
-
-      // Explicitly try to pick a good English voice
-      if (voices.length > 0) {
-        const preferredVoice = voices.find(v => v.lang === 'en-US' && !v.localService)
-          || voices.find(v => v.lang === 'en-US')
-          || voices.find(v => v.lang.startsWith('en'));
-        if (preferredVoice) {
-          utterance.voice = preferredVoice;
-          console.log('Selected voice:', preferredVoice.name);
-        }
-      }
-
-      // Garbage collection fix for some browsers (Safari)
-      // Attach to window temporarily to prevent premature GC
-      (window as any).currentUtterance = utterance;
-      utterance.onend = () => { (window as any).currentUtterance = null; };
-      utterance.onerror = (e) => { console.error('TTS Error:', e); };
-
       window.speechSynthesis.speak(utterance);
-
-      // Force voice loading if empty (Safari/Chrome quirk)
-      if (voices.length === 0) {
-        window.speechSynthesis.onvoiceschanged = () => {
-          const updatedVoices = window.speechSynthesis.getVoices();
-          // Retry voice assignment if it wasn't set? 
-          // Usually the first speak() call triggers the permission/loading.
-          console.log('Voices loaded:', updatedVoices.length);
-        };
-      }
-
-    } else {
-      console.log('Text-to-speech not supported in this browser.');
     }
   };
 
