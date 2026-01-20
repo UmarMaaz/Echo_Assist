@@ -323,36 +323,7 @@ export default function App() {
     setMatchedSign(found || null);
   };
 
-  const processAudioQueue = () => {
-    if (audioQueueRef.current.length > 0 && !isPlayingAudioRef.current) {
-      isPlayingAudioRef.current = true;
-      const audioUrl = audioQueueRef.current.shift();
-      if (audioUrl) {
-        const audio = new Audio(audioUrl);
-
-        const cleanup = () => {
-          isPlayingAudioRef.current = false;
-          processAudioQueue();
-        };
-
-        audio.onended = cleanup;
-        audio.onerror = (e) => {
-          console.error("Audio playback error:", e);
-          cleanup();
-        };
-
-        audio.play().catch(e => {
-          console.error("Error playing audio:", e);
-          cleanup();
-        });
-      } else {
-        // Defensive: if shift() returned undefined despite check
-        isPlayingAudioRef.current = false;
-      }
-    }
-  };
-
-  const speakWord = async (word: string) => {
+  const speakWord = (word: string) => {
     // Prevent repeating the same word consecutively
     if (lastSpokenWordRef.current === word) {
       console.log('Word already spoken recently, skipping:', word);
@@ -360,54 +331,17 @@ export default function App() {
     }
     lastSpokenWordRef.current = word;
 
-    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
-    console.log('speakWord called with:', word, 'API key present:', !!apiKey);
+    console.log('speakWord called with:', word);
 
-    if (!apiKey) {
-      console.log('No ElevenLabs API key, falling back to browser TTS');
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(word);
-        utterance.rate = 0.9;
-        window.speechSynthesis.speak(utterance);
-      }
-      return;
-    }
-
-    try {
-      const voiceId = 'JBFqnCBsd6RMkjVDRZzb'; // George voice
-      console.log('Calling ElevenLabs API...');
-      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'audio/mpeg',
-          'Content-Type': 'application/json',
-          'xi-api-key': apiKey
-        },
-        body: JSON.stringify({
-          text: word,
-          model_id: 'eleven_turbo_v2_5',
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`ElevenLabs API error: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-
-      // Add to queue and process
-      audioQueueRef.current.push(url);
-      processAudioQueue();
-
-    } catch (e: any) {
-      console.error('TTS Error:', e);
-      // Fallback
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(word);
-        window.speechSynthesis.speak(utterance);
-      }
+    // Browser TTS Fallback (Primary now)
+    if ('speechSynthesis' in window) {
+      // Cancel previous utterance if you want immediate switch, or let it queue?
+      // window.speechSynthesis.cancel(); // Uncomment if we want to cut off previous word
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.rate = 1.0; // Slightly faster for natural feel
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.log('Text-to-speech not supported in this browser.');
     }
   };
 
