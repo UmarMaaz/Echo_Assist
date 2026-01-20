@@ -524,7 +524,11 @@ export default function App() {
           (lastDetectedRef.current.label !== topMatch.label && now - lastDetectedRef.current.time > 1000) ||
           (lastDetectedRef.current.label === topMatch.label && now - lastDetectedRef.current.time > 2000)) {
 
-          setSentence(prev => [...prev, topMatch.label]);
+          // Prevent visual duplicates in sentence bar
+          setSentence(prev => {
+            const last = prev[prev.length - 1];
+            return last === topMatch.label ? prev : [...prev, topMatch.label];
+          });
           speakWord(topMatch.label);
           lastDetectedRef.current = { label: topMatch.label, time: now };
         }
