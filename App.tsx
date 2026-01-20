@@ -139,7 +139,6 @@ export default function App() {
   const [isCloudSynced, setIsCloudSynced] = React.useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [liveTranscript, setLiveTranscript] = React.useState('');
   const [sentence, setSentence] = React.useState<string[]>([]);
-  const [sentence, setSentence] = React.useState<string[]>([]);
   const lastDetectedRef = React.useRef<{ label: string, time: number } | null>(null);
   const lastSpokenWordRef = React.useRef<string | null>(null);
   const [predictions, setPredictions] = React.useState<Prediction[]>([]);
