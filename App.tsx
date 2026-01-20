@@ -298,14 +298,27 @@ export default function App() {
     }
   };
 
+  // Eagerly load voices to ensure they are available on mobile
+  React.useEffect(() => {
+    if ('speechSynthesis' in window) {
+      const loadVoices = () => {
+        const voices = window.speechSynthesis.getVoices();
+        console.log('Voices available:', voices.length);
+      };
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, []);
+
   // Helper to prime audio context for mobile browsers
   const unlockAudio = () => {
-    // 1. Prime TTS
+    // 1. Prime TTS (Make it audible for debugging/feedback)
     if ('speechSynthesis' in window) {
-      // Use a space and normal volume (but short) to ensure it's processed
-      const utterance = new SpeechSynthesisUtterance(' ');
+      const utterance = new SpeechSynthesisUtterance('Voice active');
+      utterance.volume = 1;
+      utterance.rate = 1;
       window.speechSynthesis.speak(utterance);
-      console.log('TTS primed');
+      console.log('TTS primed with audible message');
     }
 
     // 2. Prime Web Audio API (standard fix for iOS/Android audio locks)
@@ -315,7 +328,7 @@ export default function App() {
         const ctx = new AudioContext();
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
-        gainNode.gain.value = 0; // Keep it silent
+        gainNode.gain.value = 0; // Keep oscillator silent
         oscillator.connect(gainNode);
         gainNode.connect(ctx.destination);
         oscillator.start(0);
