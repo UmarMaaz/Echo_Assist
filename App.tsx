@@ -324,20 +324,47 @@ export default function App() {
   };
 
   const processAudioQueue = () => {
+    console.log('Processing audio queue. Length:', audioQueueRef.current.length, 'IsPlaying:', isPlayingAudioRef.current);
+
     if (audioQueueRef.current.length > 0 && !isPlayingAudioRef.current) {
       isPlayingAudioRef.current = true;
       const audioUrl = audioQueueRef.current.shift();
+
       if (audioUrl) {
+        console.log('Playing audio from queue:', audioUrl);
         const audio = new Audio(audioUrl);
+
+        // Safety timeout in case onended doesn't fire
+        const safetyTimeout = setTimeout(() => {
+          console.warn('Audio playback timed out, forcing queue advance');
+          if (isPlayingAudioRef.current) {
+            isPlayingAudioRef.current = false;
+            processAudioQueue();
+          }
+        }, 10000); // 10 seconds max per word
+
         audio.onended = () => {
+          console.log('Audio finished normally');
+          clearTimeout(safetyTimeout);
           isPlayingAudioRef.current = false;
           processAudioQueue();
         };
+
+        audio.onerror = (e) => {
+          console.error("Error playing audio object:", e);
+          clearTimeout(safetyTimeout);
+          isPlayingAudioRef.current = false;
+          processAudioQueue();
+        };
+
         audio.play().catch(e => {
-          console.error("Error playing audio:", e);
+          console.error("Error starting play:", e);
+          clearTimeout(safetyTimeout);
           isPlayingAudioRef.current = false;
           processAudioQueue();
         });
+      } else {
+        isPlayingAudioRef.current = false;
       }
     }
   };
