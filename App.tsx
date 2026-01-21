@@ -364,10 +364,36 @@ export default function App() {
     setMatchedSign(found || null);
   };
 
-  /* REMOVED: Audio Queue and ElevenLabs Logic (Switched to ResponsiveVoice) */
-  /* const processAudioQueue = ... */
+  const processAudioQueue = () => {
+    if (audioQueueRef.current.length > 0 && !isPlayingAudioRef.current) {
+      isPlayingAudioRef.current = true;
+      const audioUrl = audioQueueRef.current.shift();
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
 
-  const speakWord = (word: string) => {
+        const cleanup = () => {
+          isPlayingAudioRef.current = false;
+          processAudioQueue();
+        };
+
+        audio.onended = cleanup;
+        audio.onerror = (e) => {
+          console.error("Audio playback error:", e);
+          cleanup();
+        };
+
+        audio.play().catch(e => {
+          console.error("Error playing audio:", e);
+          // If play fails (e.g. mobile auto-block), cleanup so queue continues
+          cleanup();
+        });
+      } else {
+        isPlayingAudioRef.current = false;
+      }
+    }
+  };
+
+  const speakWord = async (word: string) => {
     // Prevent repeating the same word consecutively
     if (lastSpokenWordRef.current === word) {
       console.log('Word already spoken recently, skipping:', word);
@@ -375,18 +401,46 @@ export default function App() {
     }
     lastSpokenWordRef.current = word;
 
-    console.log('Speaking with ResponsiveVoice:', word);
+    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+    console.log('speakWord called with:', word, 'API key present:', !!apiKey);
 
-    // Check if ResponsiveVoice is loaded
-    if ((window as any).responsiveVoice) {
-      (window as any).responsiveVoice.speak(word, "UK English Male", {
-        rate: 1.0,
-        pitch: 1.0,
-        onstart: () => isPlayingAudioRef.current = true,
-        onend: () => isPlayingAudioRef.current = false
+    if (!apiKey) {
+      console.log('No ElevenLabs API key, falling back to browser TTS');
+      fallbackSpeak(word);
+      return;
+    }
+
+    try {
+      const voiceId = 'JBFqnCBsd6RMkjVDRZzb'; // George voice
+      // console.log('Calling ElevenLabs API...');
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': apiKey
+        },
+        body: JSON.stringify({
+          text: word,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+        })
       });
-    } else {
-      console.warn("ResponsiveVoice not loaded, falling back to browser TTS");
+
+      if (!response.ok) {
+        throw new Error(`ElevenLabs API error: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      // Add to queue and process
+      audioQueueRef.current.push(url);
+      processAudioQueue();
+
+    } catch (e: any) {
+      console.error('TTS Error:', e);
+      // Fallback
       fallbackSpeak(word);
     }
   };
@@ -604,13 +658,11 @@ export default function App() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <nav className="flex bg-slate-800 p-1 rounded-xl gap-1 overflow-x-auto selection:">
-            {[ViewMode.INTERPRETER, ViewMode.LISTENER, ViewMode.ACADEMY, ViewMode.TRAINING].map(m => (
-              <button key={m} onClick={() => setActiveMode(m)} className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-[8px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${activeMode === m ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>{m}</button>
-            ))}
-          </nav>
-        </div>
+        <nav className="flex bg-slate-800 p-1 rounded-xl gap-1 w-full sm:w-auto overflow-x-auto">
+          {[ViewMode.INTERPRETER, ViewMode.LISTENER, ViewMode.ACADEMY, ViewMode.TRAINING].map(m => (
+            <button key={m} onClick={() => setActiveMode(m)} className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-[8px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${activeMode === m ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>{m}</button>
+          ))}
+        </nav>
       </header>
 
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
