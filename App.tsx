@@ -250,6 +250,37 @@ export default function App() {
     initSpeech();
   }, []);
 
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+  const [isIOS, setIsIOS] = React.useState(false);
+
+  React.useEffect(() => {
+    // Detect iOS
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    setIsIOS(isIosDevice);
+
+    // Capture install prompt (Android/Desktop)
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      console.log("Install prompt captured");
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to install prompt: ${outcome}`);
+      setDeferredPrompt(null);
+    } else if (isIOS) {
+      alert("To install on iOS:\n1. Tap the Share button below\n2. Select 'Add to Home Screen'");
+    }
+  };
+
   const initSpeech = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SR) {
@@ -658,11 +689,19 @@ export default function App() {
             </div>
           </div>
         </div>
-        <nav className="flex bg-slate-800 p-1 rounded-xl gap-1 w-full sm:w-auto overflow-x-auto">
-          {[ViewMode.INTERPRETER, ViewMode.LISTENER, ViewMode.ACADEMY, ViewMode.TRAINING].map(m => (
-            <button key={m} onClick={() => setActiveMode(m)} className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-[8px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${activeMode === m ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>{m}</button>
-          ))}
-        </nav>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {(deferredPrompt || isIOS) && (
+            <button onClick={handleInstallClick} className="flex px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold uppercase tracking-widest items-center gap-2 whitespace-nowrap shadow-lg animate-pulse">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              Install App
+            </button>
+          )}
+          <nav className="flex bg-slate-800 p-1 rounded-xl gap-1 overflow-x-auto selection:">
+            {[ViewMode.INTERPRETER, ViewMode.LISTENER, ViewMode.ACADEMY, ViewMode.TRAINING].map(m => (
+              <button key={m} onClick={() => setActiveMode(m)} className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 rounded-lg text-[8px] sm:text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${activeMode === m ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>{m}</button>
+            ))}
+          </nav>
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
