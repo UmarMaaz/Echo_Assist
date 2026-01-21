@@ -153,6 +153,7 @@ export default function App() {
   const playerRef = React.useRef<HTMLAudioElement | null>(null);
   const handsRef = React.useRef<any>(null);
   const isListeningRef = React.useRef(false);
+  const shouldMicKeepRunningRef = React.useRef(false);
   const recognitionRef = React.useRef<any>(null);
 
   const currentHandDataRef = React.useRef<{ normalized: any[], curlStates: number[] } | null>(null);
