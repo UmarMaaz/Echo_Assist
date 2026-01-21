@@ -382,8 +382,8 @@ export default function App() {
       (window as any).responsiveVoice.speak(word, "UK English Male", {
         rate: 1.0,
         pitch: 1.0,
-        onstart: () => setIsPlayingAudioRef.current = true,
-        onend: () => setIsPlayingAudioRef.current = false
+        onstart: () => isPlayingAudioRef.current = true,
+        onend: () => isPlayingAudioRef.current = false
       });
     } else {
       console.warn("ResponsiveVoice not loaded, falling back to browser TTS");
