@@ -642,9 +642,9 @@ const clearLibrary = () => {
       supabase.from('echo_library').delete().eq('id', 1).then(() => {
         setIsCloudSynced('idle');
       });
-    }
+    });
   }
-};
+}
 
 const doesExist = customSigns.some(s => s.label === teachLabel.trim().toUpperCase());
 
