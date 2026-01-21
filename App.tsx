@@ -268,7 +268,6 @@ export default function App() {
 
         // Match ALL spoken words to stored signs (for LISTENER mode)
         const words = text.toUpperCase().trim().split(/\s+/).filter(w => w.length > 0);
-        console.log('Words parsed:', words, 'Available signs:', customSignsRef.current.map(s => s.label));
 
         // Check the LAST word spoken for best real-time response
         for (let i = words.length - 1; i >= 0; i--) {
@@ -276,7 +275,6 @@ export default function App() {
           const found = customSignsRef.current.find(s => s.label === word);
           if (found) {
             console.log('Match found:', word);
-            // Set directly - React will re-render with new object reference
             setMatchedSign({ ...found, _ts: Date.now() } as any);
             break;
           }
@@ -286,14 +284,23 @@ export default function App() {
         if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
         clearTimerRef.current = window.setTimeout(() => {
           setLiveTranscript('');
-          lastSpokenWordRef.current = null; // Reset spoken word tracker so it can be said again later
-          console.log('Transcript cleared - ready for new word');
+          lastSpokenWordRef.current = null;
+          console.log('Transcript cleared');
         }, 2000);
       };
-      rec.onerror = (e: any) => { console.error('Speech recognition error:', e.error); setIsSpeechActive(false); };
+
+      rec.onerror = (e: any) => {
+        console.error('Speech error:', e.error);
+        if (e.error !== 'no-speech') setIsSpeechActive(false);
+      };
+
       rec.onend = () => {
         setIsSpeechActive(false);
-        if (isListeningRef.current) rec.start();
+        // Auto-restart if it was supposed to be running (either Camera or Mic mode)
+        if (isListeningRef.current || shouldMicKeepRunningRef.current) {
+          console.log('Restarting speech recognition...');
+          try { rec.start(); } catch (e) { console.log('Restart ignored'); }
+        }
       };
       recognitionRef.current = rec;
     } else {
@@ -339,11 +346,16 @@ export default function App() {
 
   // Start speech recognition only (for LISTENER mode)
   const startSpeechOnly = async () => {
-    if (isSpeechActive) {
+    if (shouldMicKeepRunningRef.current) {
+      // User wants to stop
+      shouldMicKeepRunningRef.current = false;
       recognitionRef.current?.stop();
       setIsSpeechActive(false);
       return;
     }
+
+    // User wants to start
+    shouldMicKeepRunningRef.current = true;
 
     // Unlock audio immediately on user interaction
     unlockAudio();
@@ -353,6 +365,7 @@ export default function App() {
       recognitionRef.current?.start();
     } catch (e) {
       console.error('Microphone access denied:', e);
+      shouldMicKeepRunningRef.current = false;
       alert('Please allow microphone access for speech recognition.');
     }
   };
