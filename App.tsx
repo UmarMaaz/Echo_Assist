@@ -852,4 +852,3 @@ return (
     </main>
   </div>
 );
-}
