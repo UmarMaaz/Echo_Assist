@@ -364,36 +364,10 @@ export default function App() {
     setMatchedSign(found || null);
   };
 
-  const processAudioQueue = () => {
-    if (audioQueueRef.current.length > 0 && !isPlayingAudioRef.current) {
-      isPlayingAudioRef.current = true;
-      const audioUrl = audioQueueRef.current.shift();
-      if (audioUrl) {
-        const audio = new Audio(audioUrl);
+  /* REMOVED: Audio Queue and ElevenLabs Logic (Switched to ResponsiveVoice) */
+  /* const processAudioQueue = ... */
 
-        const cleanup = () => {
-          isPlayingAudioRef.current = false;
-          processAudioQueue();
-        };
-
-        audio.onended = cleanup;
-        audio.onerror = (e) => {
-          console.error("Audio playback error:", e);
-          cleanup();
-        };
-
-        audio.play().catch(e => {
-          console.error("Error playing audio:", e);
-          // If play fails (e.g. mobile auto-block), cleanup so queue continues
-          cleanup();
-        });
-      } else {
-        isPlayingAudioRef.current = false;
-      }
-    }
-  };
-
-  const speakWord = async (word: string) => {
+  const speakWord = (word: string) => {
     // Prevent repeating the same word consecutively
     if (lastSpokenWordRef.current === word) {
       console.log('Word already spoken recently, skipping:', word);
@@ -401,46 +375,18 @@ export default function App() {
     }
     lastSpokenWordRef.current = word;
 
-    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
-    console.log('speakWord called with:', word, 'API key present:', !!apiKey);
+    console.log('Speaking with ResponsiveVoice:', word);
 
-    if (!apiKey) {
-      console.log('No ElevenLabs API key, falling back to browser TTS');
-      fallbackSpeak(word);
-      return;
-    }
-
-    try {
-      const voiceId = 'JBFqnCBsd6RMkjVDRZzb'; // George voice
-      // console.log('Calling ElevenLabs API...');
-      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'audio/mpeg',
-          'Content-Type': 'application/json',
-          'xi-api-key': apiKey
-        },
-        body: JSON.stringify({
-          text: word,
-          model_id: 'eleven_turbo_v2_5',
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-        })
+    // Check if ResponsiveVoice is loaded
+    if ((window as any).responsiveVoice) {
+      (window as any).responsiveVoice.speak(word, "UK English Male", {
+        rate: 1.0,
+        pitch: 1.0,
+        onstart: () => setIsPlayingAudioRef.current = true,
+        onend: () => setIsPlayingAudioRef.current = false
       });
-
-      if (!response.ok) {
-        throw new Error(`ElevenLabs API error: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-
-      // Add to queue and process
-      audioQueueRef.current.push(url);
-      processAudioQueue();
-
-    } catch (e: any) {
-      console.error('TTS Error:', e);
-      // Fallback
+    } else {
+      console.warn("ResponsiveVoice not loaded, falling back to browser TTS");
       fallbackSpeak(word);
     }
   };
